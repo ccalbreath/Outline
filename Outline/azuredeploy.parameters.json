@@ -61,18 +61,6 @@
     },
     "fileShareName": {
       "value": "outline-files"
-    },
-    "awsAccessKeyId": {
-      "value": ""
-    },
-    "awsSecretAccessKey": {
-      "value": ""
-    },
-    "awsRegion": {
-      "value": "us-east-1"
-    },
-    "s3BucketName": {
-      "value": ""
     }
   }
 }

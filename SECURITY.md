@@ -2,7 +2,7 @@
 
 ## Secrets and Sensitive Data
 
-This repository has been scrubbed of all secrets and sensitive information. The `azuredeploy.parameters.json` files contain placeholder values that must be replaced before deployment.
+The `azuredeploy.parameters.json` files contain placeholder values that must be replaced before deployment.
 
 ### Required Secrets
 
