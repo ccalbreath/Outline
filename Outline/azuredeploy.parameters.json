@@ -1,0 +1,79 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "outlineUrl": {
+      "value": "https://outline.yourdomain.com"
+    },
+    "postgresAdminUsername": {
+      "value": "outlineadmin"
+    },
+    "postgresAdminPassword": {
+      "value": "YOUR_POSTGRES_PASSWORD_HERE"
+    },
+    "postgresServerName": {
+      "value": ""
+    },
+    "postgresDatabaseName": {
+      "value": "outline"
+    },
+    "postgresSkuTier": {
+      "value": "Burstable"
+    },
+    "postgresSkuName": {
+      "value": "Standard_B1ms"
+    },
+    "redisCacheName": {
+      "value": ""
+    },
+    "redisSku": {
+      "value": "Basic"
+    },
+    "redisCapacity": {
+      "value": 0
+    },
+    "storageAccountName": {
+      "value": ""
+    },
+    "storageContainerName": {
+      "value": "outline-files"
+    },
+    "secretKey": {
+      "value": "YOUR_SECRET_KEY_HERE"
+    },
+    "utilsSecret": {
+      "value": "YOUR_UTILS_SECRET_HERE"
+    },
+    "azureClientId": {
+      "value": "YOUR_AZURE_CLIENT_ID_HERE"
+    },
+    "azureClientSecret": {
+      "value": "YOUR_AZURE_CLIENT_SECRET_HERE"
+    },
+    "azureResourceAppId": {
+      "value": "00000003-0000-0000-c000-000000000000"
+    },
+    "useAzureStorage": {
+      "value": true
+    },
+    "useVolumeMount": {
+      "value": true
+    },
+    "fileShareName": {
+      "value": "outline-files"
+    },
+    "awsAccessKeyId": {
+      "value": ""
+    },
+    "awsSecretAccessKey": {
+      "value": ""
+    },
+    "awsRegion": {
+      "value": "us-east-1"
+    },
+    "s3BucketName": {
+      "value": ""
+    }
+  }
+}
+

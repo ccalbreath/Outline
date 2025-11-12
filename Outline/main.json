@@ -1,0 +1,650 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "metadata": {
+    "_generator": {
+      "name": "bicep",
+      "version": "0.38.33.27573",
+      "templateHash": "9033425609471324434"
+    }
+  },
+  "parameters": {
+    "location": {
+      "type": "string",
+      "defaultValue": "[resourceGroup().location]",
+      "metadata": {
+        "description": "The location for all resources"
+      }
+    },
+    "containerAppName": {
+      "type": "string",
+      "defaultValue": "outline-app",
+      "metadata": {
+        "description": "The name of the Container App"
+      }
+    },
+    "environmentName": {
+      "type": "string",
+      "defaultValue": "outline-env",
+      "metadata": {
+        "description": "The name of the Container App Environment"
+      }
+    },
+    "outlineUrl": {
+      "type": "string",
+      "metadata": {
+        "description": "Your Outline domain URL (e.g., https://outline.yourdomain.com)"
+      }
+    },
+    "postgresAdminUsername": {
+      "type": "string",
+      "defaultValue": "outlineadmin",
+      "metadata": {
+        "description": "PostgreSQL admin username"
+      }
+    },
+    "postgresAdminPassword": {
+      "type": "securestring",
+      "metadata": {
+        "description": "PostgreSQL admin password"
+      }
+    },
+    "postgresServerName": {
+      "type": "string",
+      "defaultValue": "[format('outline-postgres-{0}', uniqueString(resourceGroup().id))]",
+      "metadata": {
+        "description": "PostgreSQL server name (must be globally unique). Leave empty to auto-generate."
+      }
+    },
+    "postgresDatabaseName": {
+      "type": "string",
+      "defaultValue": "outline",
+      "metadata": {
+        "description": "PostgreSQL database name"
+      }
+    },
+    "postgresSkuTier": {
+      "type": "string",
+      "defaultValue": "Burstable",
+      "metadata": {
+        "description": "PostgreSQL SKU tier (Burstable, GeneralPurpose, MemoryOptimized)"
+      }
+    },
+    "postgresSkuName": {
+      "type": "string",
+      "defaultValue": "Standard_B1ms",
+      "metadata": {
+        "description": "PostgreSQL SKU name (e.g., Standard_B1ms, GP_Standard_D2s_v3)"
+      }
+    },
+    "redisCacheName": {
+      "type": "string",
+      "defaultValue": "[format('outline-redis-{0}', uniqueString(resourceGroup().id))]",
+      "metadata": {
+        "description": "Redis cache name (must be globally unique). Leave empty to auto-generate."
+      }
+    },
+    "redisSku": {
+      "type": "string",
+      "defaultValue": "Basic",
+      "metadata": {
+        "description": "Redis SKU (Basic, Standard, Premium)"
+      }
+    },
+    "redisCapacity": {
+      "type": "int",
+      "defaultValue": 0,
+      "metadata": {
+        "description": "Redis capacity (C0, C1, C2, C3, C4, C5, C6, P1, P2, P3, P4, P5)"
+      }
+    },
+    "storageAccountName": {
+      "type": "string",
+      "defaultValue": "[format('outline{0}', uniqueString(resourceGroup().id))]",
+      "metadata": {
+        "description": "Storage account name (must be globally unique, lowercase, 3-24 chars). Leave empty to auto-generate."
+      }
+    },
+    "storageContainerName": {
+      "type": "string",
+      "defaultValue": "outline-files",
+      "metadata": {
+        "description": "Storage container name for Outline files"
+      }
+    },
+    "secretKey": {
+      "type": "securestring",
+      "metadata": {
+        "description": "Secret key for Outline (generate with: openssl rand -hex 32)"
+      }
+    },
+    "utilsSecret": {
+      "type": "securestring",
+      "metadata": {
+        "description": "Utils secret for Outline (generate with: openssl rand -hex 32)"
+      }
+    },
+    "azureClientId": {
+      "type": "securestring",
+      "metadata": {
+        "description": "Azure AD Client ID"
+      }
+    },
+    "azureClientSecret": {
+      "type": "securestring",
+      "metadata": {
+        "description": "Azure AD Client Secret"
+      }
+    },
+    "azureResourceAppId": {
+      "type": "string",
+      "defaultValue": "00000003-0000-0000-c000-000000000000",
+      "metadata": {
+        "description": "Azure AD Resource App ID"
+      }
+    },
+    "useAzureStorage": {
+      "type": "bool",
+      "defaultValue": true,
+      "metadata": {
+        "description": "Use Azure Storage Account for file storage (true) or external S3 (false)"
+      }
+    },
+    "useVolumeMount": {
+      "type": "bool",
+      "defaultValue": true,
+      "metadata": {
+        "description": "Use Azure File Storage as volume mount (true) or S3-compatible storage (false). Requires useAzureStorage=true"
+      }
+    },
+    "fileShareName": {
+      "type": "string",
+      "defaultValue": "outline-files",
+      "metadata": {
+        "description": "Azure File Share name for volume mount"
+      }
+    },
+    "awsAccessKeyId": {
+      "type": "securestring",
+      "defaultValue": "",
+      "metadata": {
+        "description": "AWS Access Key ID for S3 storage (only if useAzureStorage is false)"
+      }
+    },
+    "awsSecretAccessKey": {
+      "type": "securestring",
+      "defaultValue": "",
+      "metadata": {
+        "description": "AWS Secret Access Key for S3 storage (only if useAzureStorage is false)"
+      }
+    },
+    "awsRegion": {
+      "type": "string",
+      "defaultValue": "us-east-1",
+      "metadata": {
+        "description": "AWS Region for S3 (only if useAzureStorage is false)"
+      }
+    },
+    "s3BucketName": {
+      "type": "string",
+      "defaultValue": "",
+      "metadata": {
+        "description": "S3 Bucket Name (only if useAzureStorage is false)"
+      }
+    },
+    "logAnalyticsWorkspaceName": {
+      "type": "string",
+      "defaultValue": "outline-logs",
+      "metadata": {
+        "description": "Log Analytics Workspace name"
+      }
+    }
+  },
+  "variables": {
+    "effectivePostgresServerName": "[if(empty(parameters('postgresServerName')), format('outline-postgres-{0}', uniqueString(resourceGroup().id)), parameters('postgresServerName'))]",
+    "effectiveRedisCacheName": "[if(empty(parameters('redisCacheName')), format('outline-redis-{0}', uniqueString(resourceGroup().id)), parameters('redisCacheName'))]",
+    "effectiveStorageAccountName": "[if(empty(parameters('storageAccountName')), format('outline{0}', toLower(uniqueString(resourceGroup().id))), toLower(parameters('storageAccountName')))]",
+    "storageEndpoint": "[format('https://{0}.blob.{1}', variables('effectiveStorageAccountName'), environment().suffixes.storage)]"
+  },
+  "resources": [
+    {
+      "type": "Microsoft.DBforPostgreSQL/flexibleServers",
+      "apiVersion": "2023-06-01-preview",
+      "name": "[variables('effectivePostgresServerName')]",
+      "location": "[parameters('location')]",
+      "sku": {
+        "name": "[parameters('postgresSkuName')]",
+        "tier": "[parameters('postgresSkuTier')]"
+      },
+      "properties": {
+        "administratorLogin": "[parameters('postgresAdminUsername')]",
+        "administratorLoginPassword": "[parameters('postgresAdminPassword')]",
+        "version": "15",
+        "storage": {
+          "storageSizeGB": 32
+        },
+        "backup": {
+          "backupRetentionDays": 7,
+          "geoRedundantBackup": "Disabled"
+        },
+        "network": {
+          "publicNetworkAccess": "Enabled"
+        },
+        "highAvailability": {
+          "mode": "Disabled"
+        }
+      }
+    },
+    {
+      "type": "Microsoft.DBforPostgreSQL/flexibleServers/firewallRules",
+      "apiVersion": "2023-06-01-preview",
+      "name": "[format('{0}/{1}', variables('effectivePostgresServerName'), 'AllowAzureServices')]",
+      "properties": {
+        "startIpAddress": "0.0.0.0",
+        "endIpAddress": "0.0.0.0"
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.DBforPostgreSQL/flexibleServers', variables('effectivePostgresServerName'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.DBforPostgreSQL/flexibleServers/databases",
+      "apiVersion": "2023-06-01-preview",
+      "name": "[format('{0}/{1}', variables('effectivePostgresServerName'), parameters('postgresDatabaseName'))]",
+      "properties": {
+        "charset": "UTF8",
+        "collation": "en_US.utf8"
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.DBforPostgreSQL/flexibleServers', variables('effectivePostgresServerName'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Resources/deploymentScripts",
+      "apiVersion": "2023-08-01",
+      "name": "[format('enable-postgres-extensions-{0}', uniqueString(resourceGroup().id))]",
+      "location": "[parameters('location')]",
+      "kind": "AzureCLI",
+      "properties": {
+        "azCliVersion": "2.53.0",
+        "scriptContent": "      # Install PostgreSQL client and Python dependencies\n      apt-get update -qq && apt-get install -y postgresql-client python3-pip > /dev/null 2>&1 || \\\n      yum install -y postgresql python3-pip > /dev/null 2>&1 || \\\n      apk add --no-cache postgresql-client python3 py3-pip > /dev/null 2>&1\n      \n      # Install psycopg2 for Python\n      pip3 install psycopg2-binary --quiet\n      \n      # Python script to enable extensions\n      python3 << EOF\n      import psycopg2\n      import sys\n      \n      extensions = [\"uuid-ossp\", \"unaccent\", \"pg_trgm\"]\n      \n      try:\n          conn = psycopg2.connect(\n              host=\"${postgresServer.properties.fullyQualifiedDomainName}\",\n              database=\"${postgresDatabaseName}\",\n              user=\"${postgresAdminUsername}\",\n              password=\"${postgresAdminPassword}\",\n              sslmode=\"require\"\n          )\n          cur = conn.cursor()\n          \n          for ext in extensions:\n              try:\n                  cur.execute(f'CREATE EXTENSION IF NOT EXISTS \"{ext}\";')\n                  conn.commit()\n                  print(f\"Successfully enabled {ext} extension\")\n              except Exception as e:\n                  print(f\"Warning: Failed to enable {ext} extension: {e}\")\n          \n          cur.close()\n          conn.close()\n          print(\"Extension setup completed\")\n      except Exception as e:\n          print(f\"Error connecting to database: {e}\")\n          sys.exit(1)\n      EOF\n    ",
+        "timeout": "PT10M",
+        "cleanupPreference": "OnSuccess",
+        "retentionInterval": "PT1H"
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.DBforPostgreSQL/flexibleServers/databases', variables('effectivePostgresServerName'), parameters('postgresDatabaseName'))]",
+        "[resourceId('Microsoft.DBforPostgreSQL/flexibleServers/firewallRules', variables('effectivePostgresServerName'), 'AllowAzureServices')]"
+      ]
+    },
+    {
+      "type": "Microsoft.Cache/redis",
+      "apiVersion": "2023-08-01",
+      "name": "[variables('effectiveRedisCacheName')]",
+      "location": "[parameters('location')]",
+      "properties": {
+        "sku": {
+          "name": "[parameters('redisSku')]",
+          "family": "[if(equals(parameters('redisSku'), 'Premium'), 'P', if(equals(parameters('redisSku'), 'Standard'), 'C', 'C'))]",
+          "capacity": "[parameters('redisCapacity')]"
+        },
+        "enableNonSslPort": false,
+        "minimumTlsVersion": "1.2",
+        "redisConfiguration": "[if(not(equals(parameters('redisSku'), 'Basic')), createObject('maxmemoryReserved', '2', 'maxmemoryPolicy', 'allkeys-lru'), createObject())]"
+      }
+    },
+    {
+      "type": "Microsoft.Storage/storageAccounts",
+      "apiVersion": "2023-01-01",
+      "name": "[variables('effectiveStorageAccountName')]",
+      "location": "[parameters('location')]",
+      "sku": {
+        "name": "Standard_LRS"
+      },
+      "kind": "StorageV2",
+      "properties": {
+        "accessTier": "Hot",
+        "supportsHttpsTrafficOnly": true,
+        "minimumTlsVersion": "TLS1_2",
+        "allowBlobPublicAccess": false
+      }
+    },
+    {
+      "type": "Microsoft.Storage/storageAccounts/blobServices",
+      "apiVersion": "2023-01-01",
+      "name": "[format('{0}/{1}', variables('effectiveStorageAccountName'), 'default')]",
+      "properties": {
+        "cors": {
+          "corsRules": []
+        },
+        "deleteRetentionPolicy": {
+          "enabled": false
+        }
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Storage/storageAccounts', variables('effectiveStorageAccountName'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Storage/storageAccounts/blobServices/containers",
+      "apiVersion": "2023-01-01",
+      "name": "[format('{0}/{1}/{2}', variables('effectiveStorageAccountName'), 'default', parameters('storageContainerName'))]",
+      "properties": {
+        "publicAccess": "None"
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Storage/storageAccounts/blobServices', variables('effectiveStorageAccountName'), 'default')]"
+      ]
+    },
+    {
+      "type": "Microsoft.Storage/storageAccounts/fileServices",
+      "apiVersion": "2023-01-01",
+      "name": "[format('{0}/{1}', variables('effectiveStorageAccountName'), 'default')]",
+      "properties": {},
+      "dependsOn": [
+        "[resourceId('Microsoft.Storage/storageAccounts', variables('effectiveStorageAccountName'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Storage/storageAccounts/fileServices/shares",
+      "apiVersion": "2023-01-01",
+      "name": "[format('{0}/{1}/{2}', variables('effectiveStorageAccountName'), 'default', parameters('fileShareName'))]",
+      "properties": {
+        "accessTier": "TransactionOptimized",
+        "shareQuota": 100
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Storage/storageAccounts/fileServices', variables('effectiveStorageAccountName'), 'default')]"
+      ]
+    },
+    {
+      "type": "Microsoft.OperationalInsights/workspaces",
+      "apiVersion": "2021-06-01",
+      "name": "[parameters('logAnalyticsWorkspaceName')]",
+      "location": "[parameters('location')]",
+      "properties": {
+        "sku": {
+          "name": "PerGB2018"
+        },
+        "retentionInDays": 30
+      }
+    },
+    {
+      "type": "Microsoft.App/managedEnvironments",
+      "apiVersion": "2023-05-01",
+      "name": "[parameters('environmentName')]",
+      "location": "[parameters('location')]",
+      "properties": {
+        "appLogsConfiguration": {
+          "destination": "log-analytics",
+          "logAnalyticsConfiguration": {
+            "customerId": "[reference(resourceId('Microsoft.OperationalInsights/workspaces', parameters('logAnalyticsWorkspaceName')), '2021-06-01').customerId]",
+            "sharedKey": "[listKeys(resourceId('Microsoft.OperationalInsights/workspaces', parameters('logAnalyticsWorkspaceName')), '2021-06-01').primarySharedKey]"
+          }
+        }
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.OperationalInsights/workspaces', parameters('logAnalyticsWorkspaceName'))]"
+      ]
+    },
+    {
+      "condition": "[and(parameters('useAzureStorage'), parameters('useVolumeMount'))]",
+      "type": "Microsoft.App/managedEnvironments/storages",
+      "apiVersion": "2023-05-01",
+      "name": "[format('{0}/{1}', parameters('environmentName'), 'outline-storage')]",
+      "properties": {
+        "azureFile": {
+          "accountName": "[variables('effectiveStorageAccountName')]",
+          "shareName": "[parameters('fileShareName')]",
+          "accessMode": "ReadWrite",
+          "accountKey": "[listKeys(resourceId('Microsoft.Storage/storageAccounts', variables('effectiveStorageAccountName')), '2023-01-01').keys[0].value]"
+        }
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.App/managedEnvironments', parameters('environmentName'))]",
+        "[resourceId('Microsoft.Storage/storageAccounts/fileServices/shares', variables('effectiveStorageAccountName'), 'default', parameters('fileShareName'))]",
+        "[resourceId('Microsoft.Storage/storageAccounts', variables('effectiveStorageAccountName'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.App/containerApps",
+      "apiVersion": "2023-05-01",
+      "name": "[parameters('containerAppName')]",
+      "location": "[parameters('location')]",
+      "properties": {
+        "managedEnvironmentId": "[resourceId('Microsoft.App/managedEnvironments', parameters('environmentName'))]",
+        "configuration": {
+          "ingress": {
+            "external": true,
+            "targetPort": 3000,
+            "allowInsecure": false,
+            "transport": "auto",
+            "traffic": [
+              {
+                "weight": 100,
+                "latestRevision": true
+              }
+            ]
+          },
+          "secrets": [
+            {
+              "name": "secret-key",
+              "value": "[parameters('secretKey')]"
+            },
+            {
+              "name": "utils-secret",
+              "value": "[parameters('utilsSecret')]"
+            },
+            {
+              "name": "database-url",
+              "value": "[format('postgres://{0}:{1}@{2}:5432/{3}?sslmode=require', parameters('postgresAdminUsername'), parameters('postgresAdminPassword'), reference(resourceId('Microsoft.DBforPostgreSQL/flexibleServers', variables('effectivePostgresServerName')), '2023-06-01-preview').fullyQualifiedDomainName, parameters('postgresDatabaseName'))]"
+            },
+            {
+              "name": "redis-url",
+              "value": "[format('rediss://:{0}@{1}:6380?ssl=true', listKeys(resourceId('Microsoft.Cache/redis', variables('effectiveRedisCacheName')), '2023-08-01').primaryKey, reference(resourceId('Microsoft.Cache/redis', variables('effectiveRedisCacheName')), '2023-08-01').hostName)]"
+            },
+            {
+              "name": "azure-client-id",
+              "value": "[parameters('azureClientId')]"
+            },
+            {
+              "name": "azure-client-secret",
+              "value": "[parameters('azureClientSecret')]"
+            },
+            {
+              "name": "aws-access-key-id",
+              "value": "[if(parameters('useAzureStorage'), variables('effectiveStorageAccountName'), parameters('awsAccessKeyId'))]"
+            },
+            {
+              "name": "aws-secret-access-key",
+              "value": "[if(parameters('useAzureStorage'), listKeys(resourceId('Microsoft.Storage/storageAccounts', variables('effectiveStorageAccountName')), '2023-01-01').keys[0].value, parameters('awsSecretAccessKey'))]"
+            },
+            {
+              "name": "azure-storage-key",
+              "value": "[if(and(parameters('useAzureStorage'), parameters('useVolumeMount')), listKeys(resourceId('Microsoft.Storage/storageAccounts', variables('effectiveStorageAccountName')), '2023-01-01').keys[0].value, '')]"
+            }
+          ]
+        },
+        "template": {
+          "containers": [
+            {
+              "name": "outline",
+              "image": "outlinewiki/outline:1.0.1",
+              "env": [
+                {
+                  "name": "NODE_ENV",
+                  "value": "production"
+                },
+                {
+                  "name": "URL",
+                  "value": "[parameters('outlineUrl')]"
+                },
+                {
+                  "name": "PORT",
+                  "value": "3000"
+                },
+                {
+                  "name": "WEB_CONCURRENCY",
+                  "value": "1"
+                },
+                {
+                  "name": "SECRET_KEY",
+                  "secretRef": "secret-key"
+                },
+                {
+                  "name": "UTILS_SECRET",
+                  "secretRef": "utils-secret"
+                },
+                {
+                  "name": "DATABASE_URL",
+                  "secretRef": "database-url"
+                },
+                {
+                  "name": "PGSSLMODE",
+                  "value": "require"
+                },
+                {
+                  "name": "REDIS_URL",
+                  "secretRef": "redis-url"
+                },
+                {
+                  "name": "FILE_STORAGE",
+                  "value": "[if(and(parameters('useAzureStorage'), parameters('useVolumeMount')), 'local', 's3')]"
+                },
+                {
+                  "name": "FILE_STORAGE_LOCAL_ROOT_DIR",
+                  "value": "[if(and(parameters('useAzureStorage'), parameters('useVolumeMount')), '/var/lib/outline/data', '')]"
+                },
+                {
+                  "name": "AWS_ACCESS_KEY_ID",
+                  "secretRef": "aws-access-key-id"
+                },
+                {
+                  "name": "AWS_SECRET_ACCESS_KEY",
+                  "secretRef": "aws-secret-access-key"
+                },
+                {
+                  "name": "AWS_REGION",
+                  "value": "[if(and(parameters('useAzureStorage'), not(parameters('useVolumeMount'))), parameters('location'), parameters('awsRegion'))]"
+                },
+                {
+                  "name": "AWS_S3_UPLOAD_BUCKET_NAME",
+                  "value": "[if(and(parameters('useAzureStorage'), not(parameters('useVolumeMount'))), parameters('storageContainerName'), parameters('s3BucketName'))]"
+                },
+                {
+                  "name": "AWS_S3_UPLOAD_BUCKET_URL",
+                  "value": "[if(and(parameters('useAzureStorage'), not(parameters('useVolumeMount'))), variables('storageEndpoint'), '')]"
+                },
+                {
+                  "name": "AWS_S3_FORCE_PATH_STYLE",
+                  "value": "[if(and(parameters('useAzureStorage'), not(parameters('useVolumeMount'))), 'true', 'false')]"
+                },
+                {
+                  "name": "AWS_S3_ACL",
+                  "value": "private"
+                },
+                {
+                  "name": "FORCE_HTTPS",
+                  "value": "true"
+                },
+                {
+                  "name": "AZURE_CLIENT_ID",
+                  "secretRef": "azure-client-id"
+                },
+                {
+                  "name": "AZURE_CLIENT_SECRET",
+                  "secretRef": "azure-client-secret"
+                },
+                {
+                  "name": "AZURE_RESOURCE_APP_ID",
+                  "value": "[parameters('azureResourceAppId')]"
+                },
+                {
+                  "name": "RATE_LIMITER_ENABLED",
+                  "value": "true"
+                },
+                {
+                  "name": "RATE_LIMITER_REQUESTS",
+                  "value": "1000"
+                },
+                {
+                  "name": "RATE_LIMITER_DURATION_WINDOW",
+                  "value": "60"
+                },
+                {
+                  "name": "LOG_LEVEL",
+                  "value": "info"
+                },
+                {
+                  "name": "ALLOWED_IFRAME_HOSTS",
+                  "value": "scribehow.com,*.scribehow.com,app.scribehow.com"
+                }
+              ],
+              "resources": {
+                "cpu": "[json('1.0')]",
+                "memory": "2Gi"
+              },
+              "volumeMounts": "[if(and(parameters('useAzureStorage'), parameters('useVolumeMount')), createArray(createObject('volumeName', 'outline-storage', 'mountPath', '/var/lib/outline/data')), createArray())]"
+            }
+          ],
+          "volumes": "[if(and(parameters('useAzureStorage'), parameters('useVolumeMount')), createArray(createObject('name', 'outline-storage', 'storageType', 'AzureFile', 'storageName', 'outline-storage')), createArray())]",
+          "scale": {
+            "minReplicas": 1,
+            "maxReplicas": 10,
+            "rules": [
+              {
+                "name": "http-rule",
+                "http": {
+                  "metadata": {
+                    "concurrentRequests": "100"
+                  }
+                }
+              }
+            ]
+          }
+        }
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.App/managedEnvironments', parameters('environmentName'))]",
+        "[resourceId('Microsoft.App/managedEnvironments/storages', parameters('environmentName'), 'outline-storage')]",
+        "[resourceId('Microsoft.DBforPostgreSQL/flexibleServers', variables('effectivePostgresServerName'))]",
+        "[resourceId('Microsoft.Cache/redis', variables('effectiveRedisCacheName'))]",
+        "[resourceId('Microsoft.Storage/storageAccounts', variables('effectiveStorageAccountName'))]"
+      ]
+    }
+  ],
+  "outputs": {
+    "containerAppFqdn": {
+      "type": "string",
+      "value": "[reference(resourceId('Microsoft.App/containerApps', parameters('containerAppName')), '2023-05-01').configuration.ingress.fqdn]"
+    },
+    "containerAppName": {
+      "type": "string",
+      "value": "[parameters('containerAppName')]"
+    },
+    "postgresServerFqdn": {
+      "type": "string",
+      "value": "[reference(resourceId('Microsoft.DBforPostgreSQL/flexibleServers', variables('effectivePostgresServerName')), '2023-06-01-preview').fullyQualifiedDomainName]"
+    },
+    "postgresDatabaseName": {
+      "type": "string",
+      "value": "[parameters('postgresDatabaseName')]"
+    },
+    "redisHostName": {
+      "type": "string",
+      "value": "[reference(resourceId('Microsoft.Cache/redis', variables('effectiveRedisCacheName')), '2023-08-01').hostName]"
+    },
+    "storageAccountName": {
+      "type": "string",
+      "value": "[variables('effectiveStorageAccountName')]"
+    },
+    "storageContainerName": {
+      "type": "string",
+      "value": "[parameters('storageContainerName')]"
+    },
+    "azureAdRedirectUri": {
+      "type": "string",
+      "value": "[format('https://{0}/auth/azure.callback', reference(resourceId('Microsoft.App/containerApps', parameters('containerAppName')), '2023-05-01').configuration.ingress.fqdn)]"
+    }
+  }
+}

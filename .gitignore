@@ -1,0 +1,29 @@
+# Secrets and sensitive files
+*.env
+*.key
+*.pem
+*.p12
+*.pfx
+*.jks
+
+# Azure deployment parameters with secrets
+# Note: azuredeploy.parameters.json files are included but have placeholder values
+# Users should create their own local copies with actual secrets
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Logs
+*.log
+
+# Azure deployment folder (contains sensitive configuration)
+Azure/
+
