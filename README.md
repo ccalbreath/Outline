@@ -1,6 +1,6 @@
 # Outline Azure Container Apps Deployment
 
-This directory contains everything needed to deploy Outline to Azure Container Apps. The Bicep template automatically creates all required resources including PostgreSQL, Redis, and Azure File Storage.
+Everything needed to deploy Outline to Azure Container Apps. The Bicep template automatically creates all required resources including PostgreSQL, Redis, and Azure File Storage.
 
 ## Quick Start
 
@@ -247,7 +247,6 @@ If you prefer S3-compatible storage:
 2. **MinIO Gateway (Azure-native S3):**
    - Set `useVolumeMount=false` in parameters
    - Deploy MinIO Container App separately
-   - See `AZURE_STORAGE_REVIEW.md` for details
 
 
 ## Scaling
